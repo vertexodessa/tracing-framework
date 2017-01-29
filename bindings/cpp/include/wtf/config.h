@@ -6,11 +6,11 @@ namespace wtf {
 // Whether default WTF tracing is enabled. Conditioned on the WTF_ENABLE
 // define. This impacts default template instantiations. Macros will use
 // a namespace specific kWtfEnabledForNamespace const.
-#if defined(WTF_ENABLE)
+//#if defined(WTF_ENABLE)
 constexpr bool kMasterEnable = true;
-#else
-constexpr bool kMasterEnable = false;
-#endif
+//#else
+//constexpr bool kMasterEnable = false;
+//#endif
 
 }  // namespace wtf
 

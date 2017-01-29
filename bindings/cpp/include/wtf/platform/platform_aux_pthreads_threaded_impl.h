@@ -32,6 +32,13 @@ void PlatformInitializeThreading() {
                internal::InitializeThreadingOnce);
 }
 
+EventBuffer* PlatformGetThreadLocalEventBuffer() {
+  pthread_once(&internal::initialize_threading_once,
+               internal::InitializeThreadingOnce);
+  return static_cast<EventBuffer*>(
+      pthread_getspecific(internal::event_buffer_key));
+}
+
 void PlatformSetThreadLocalEventBuffer(EventBuffer* event_buffer) {
   pthread_once(&internal::initialize_threading_once,
                internal::InitializeThreadingOnce);

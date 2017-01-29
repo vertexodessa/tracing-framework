@@ -2,6 +2,9 @@
 #define TRACING_FRAMEWORK_BINDINGS_CPP_INCLUDE_WTF_MACROS_H_
 
 #include "wtf/runtime.h"
+#include <string>
+#include <thread>
+#include <mutex>
 
 #define __INTERNAL_WTF_NAMESPACE ::wtf
 
@@ -116,6 +119,17 @@
       __WTF_INTERNAL_UNIQUE(__wtf_scopen_){                                   \
           __WTF_INTERNAL_UNIQUE(__wtf_scope_eventn_)};                        \
   __WTF_INTERNAL_UNIQUE(__wtf_scopen_).Enter
+
+#define WTF_AUTO_SCOPE0(name_spec) \
+    static std::string sRandomStringName(__PRETTY_FUNCTION__);                  \
+    do{                                                         \
+        static std::once_flag flag;                             \
+        std::call_once(flag, [](){                              \
+                std::replace(sRandomStringName.begin(), sRandomStringName.end(), ':', '#');    \
+            });                                                 \
+        WTF_AUTO_THREAD_ENABLE();                               \
+    } while (0);                                                \
+    WTF_SCOPE0(sRandomStringName.c_str());
 
 // Creates a scoped "Task" zone that will be in effect until scope exit.
 // This is ideal for thread pools and such which execute many workers where
