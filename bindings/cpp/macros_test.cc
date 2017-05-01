@@ -1,12 +1,18 @@
 #include "wtf/macros.h"
 
 #include <fstream>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include "gtest/gtest.h"
 
 #ifndef TMP_PREFIX
 #define TMP_PREFIX ""
 #endif
+
+char const* kSignalWatcherFilename = "./tmptstsignal_watcher.wtf-trace";
+
+WTF_INIT_SIGNAL_WATCHER(kSignalWatcherFilename);
 
 namespace wtf {
 namespace {
@@ -229,6 +235,31 @@ TEST_F(MacrosTest, BasicEndToEnd) {
 
   EXPECT_TRUE(
       Runtime::GetInstance()->SaveToFile(TMP_PREFIX "tmpmacrobuf.wtf-trace"));
+}
+
+TEST_F(MacrosTest, SignalWatcher) {
+    ClearEventBuffer();
+    unlink(kSignalWatcherFilename);
+    // watch SIGALRM
+    WTF_WATCH_SIGNAL(14);
+    WTF_EVENT0("MacrosTest#SignalWatcher");
+
+    alarm(1);
+
+    const int second = 1000;
+    usleep(5000 * second);
+
+    alarm(0);
+    // allow the thread to finish it's work
+    usleep(1000 * second);
+    struct stat buffer;
+
+#if defined(WTF_PTHREAD_THREADED) || defined(WTF_SINGLE_THREADED)
+    EXPECT_FALSE(stat(kSignalWatcherFilename, &buffer) == 0)
+#else
+    EXPECT_TRUE(stat(kSignalWatcherFilename, &buffer) == 0);
+    EXPECT_TRUE(buffer.st_size > 0);
+#endif
 }
 
 }  // namespace

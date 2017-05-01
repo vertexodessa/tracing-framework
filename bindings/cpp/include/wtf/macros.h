@@ -154,4 +154,41 @@
 // Same as WTF_TASK_IF conditioned on the current namespace.
 #define WTF_TASK(name) WTF_TASK_IF(kWtfEnabledForNamespace, name)
 
+// std threading only
+#if defined(WTF_PTHREAD_THREADED) || defined(WTF_SINGLE_THREADED)
+
+#define WTF_INIT_SIGNAL_WATCHER(unused)
+#define WTF_WATCH_SIGNAL(unused)
+
+#else
+
+#include <signal.h>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
+
+#define WTF_INIT_SIGNAL_WATCHER(filename)                       \
+    std::condition_variable cv;                                 \
+    std::mutex m;                                               \
+    void onSignal(int) {                                        \
+        cv.notify_all();                                        \
+    };                                                          \
+    void watcherThread () {                                     \
+        std::unique_lock<std::mutex> lock(m);                   \
+        while (true) {                                          \
+            cv.wait(lock);                                      \
+            wtf::Runtime::GetInstance()->SaveToFile(filename);  \
+        }                                                       \
+    }
+
+#define WTF_WATCH_SIGNAL(number)                \
+    std::thread signal_watcher(watcherThread);  \
+    do {                                        \
+        signal(number, onSignal);               \
+        signal_watcher.detach();                \
+    } while(0)
+
+#endif
+
+
 #endif  // TRACING_FRAMEWORK_BINDINGS_CPP_INCLUDE_WTF_MACROS_H_
